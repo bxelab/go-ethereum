@@ -53,6 +53,12 @@ func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
 	default:
 		precompiles = PrecompiledContractsHomestead
 	}
+	if evm.chainRules.IsBxEv1 {
+		precompiledV1 := PrecompiledContractsBxE["v1"]
+		for addr, precompile := range precompiledV1 {
+			precompiles[addr] = precompile
+		}
+	}
 	p, ok := precompiles[addr]
 	return p, ok
 }

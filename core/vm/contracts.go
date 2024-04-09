@@ -43,6 +43,25 @@ type PrecompiledContract interface {
 	Run(input []byte) ([]byte, error) // Run runs the precompiled contract
 }
 
+var PrecompiledContractsBxE = map[string]map[common.Address]PrecompiledContract{}
+
+// RegisterPrecompiledContract registers a precompiled contract with the given address.
+func RegisterPrecompiledContract(version string, address common.Address, contract PrecompiledContract) {
+	if _, ok := PrecompiledContractsBxE[version]; !ok {
+		PrecompiledContractsBxE[version] = map[common.Address]PrecompiledContract{}
+	}
+	//check address duplicate
+	for v, addrContractMap := range PrecompiledContractsBxE {
+		for addr, _ := range addrContractMap {
+			if addr == address {
+				panic(fmt.Sprintf("address %s already registered in version %s", address.String(), v))
+			}
+		}
+	}
+	PrecompiledContractsBxE[version][address] = contract
+	PrecompiledAddressesBxEv1 = append(PrecompiledAddressesBxEv1, address)
+}
+
 // PrecompiledContractsHomestead contains the default set of pre-compiled Ethereum
 // contracts used in the Frontier and Homestead releases.
 var PrecompiledContractsHomestead = map[common.Address]PrecompiledContract{
@@ -123,6 +142,7 @@ var PrecompiledContractsBLS = map[common.Address]PrecompiledContract{
 }
 
 var (
+	PrecompiledAddressesBxEv1     []common.Address
 	PrecompiledAddressesCancun    []common.Address
 	PrecompiledAddressesBerlin    []common.Address
 	PrecompiledAddressesIstanbul  []common.Address
@@ -145,7 +165,9 @@ func init() {
 	}
 	for k := range PrecompiledContractsCancun {
 		PrecompiledAddressesCancun = append(PrecompiledAddressesCancun, k)
+		PrecompiledAddressesBxEv1 = append(PrecompiledAddressesBxEv1, k)
 	}
+
 }
 
 // ActivePrecompiles returns the precompiles enabled with the current configuration.
@@ -159,6 +181,8 @@ func ActivePrecompiles(rules params.Rules) []common.Address {
 		return PrecompiledAddressesIstanbul
 	case rules.IsByzantium:
 		return PrecompiledAddressesByzantium
+	case rules.IsBxEv1:
+		return PrecompiledAddressesBxEv1
 	default:
 		return PrecompiledAddressesHomestead
 	}
